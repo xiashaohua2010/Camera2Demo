@@ -28,6 +28,7 @@ import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -44,12 +45,18 @@ public class MainActivity extends AppCompatActivity implements ViewTreeObserver.
     private static final int ACTION_REQUEST_PERMISSIONS = 1;
     private Camera2Helper camera2Helper;
     private TextureView textureView;
+
+    private Camera2Helper camera2Helper2;
+    private TextureView textureView2;
+
+
     // 用于显示原始预览数据
     private ImageView ivOriginFrame;
     // 用于显示和预览画面相同的图像数据
     private ImageView ivPreviewFrame;
     // 默认打开的CAMERA
     private static final String CAMERA_ID = Camera2Helper.CAMERA_ID_BACK;
+    private static final String CAMERA_ID2 = Camera2Helper.CAMERA_ID_FRONT;
     // 图像帧数据，全局变量避免反复创建，降低gc频率
     private byte[] nv21;
     // 显示的旋转角度
@@ -82,6 +89,9 @@ public class MainActivity extends AppCompatActivity implements ViewTreeObserver.
     private void initView() {
         textureView = findViewById(R.id.texture_preview);
         textureView.getViewTreeObserver().addOnGlobalLayoutListener(this);
+
+        textureView2 = findViewById(R.id.texture_preview2);
+
     }
 
     private boolean checkPermissions(String[] neededPermissions) {
@@ -107,6 +117,20 @@ public class MainActivity extends AppCompatActivity implements ViewTreeObserver.
                 .rotation(getWindowManager().getDefaultDisplay().getRotation())
                 .build();
         camera2Helper.start();
+
+
+        camera2Helper2 = new Camera2Helper.Builder()
+                .cameraListener(this)
+                .maxPreviewSize(new Point(1920, 1080))
+                .minPreviewSize(new Point(1280, 720))
+                .specificCameraId(CAMERA_ID2)
+                .context(getApplicationContext())
+                .previewOn(textureView2)
+                .previewViewSize(new Point(textureView2.getWidth(), textureView2.getHeight()))
+                .rotation(getWindowManager().getDefaultDisplay().getRotation())
+                .build();
+        camera2Helper2.start();
+
     }
 
     @Override
@@ -139,6 +163,8 @@ public class MainActivity extends AppCompatActivity implements ViewTreeObserver.
     protected void onPause() {
         if (camera2Helper != null) {
             camera2Helper.stop();
+            camera2Helper2.stop();
+
         }
         super.onPause();
     }
@@ -148,6 +174,7 @@ public class MainActivity extends AppCompatActivity implements ViewTreeObserver.
         super.onResume();
         if (camera2Helper != null) {
             camera2Helper.start();
+            camera2Helper2.start();
         }
     }
 
@@ -159,6 +186,8 @@ public class MainActivity extends AppCompatActivity implements ViewTreeObserver.
         this.isMirrorPreview = isMirror;
         this.openedCameraId = cameraId;
         //在相机打开时，添加右上角的view用于显示原始数据和预览数据
+
+        /*
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -176,11 +205,11 @@ public class MainActivity extends AppCompatActivity implements ViewTreeObserver.
                 int longSide = displayMetrics.widthPixels > displayMetrics.heightPixels ? displayMetrics.widthPixels : displayMetrics.heightPixels;
                 int shortSide = displayMetrics.widthPixels < displayMetrics.heightPixels ? displayMetrics.widthPixels : displayMetrics.heightPixels;
 
-                FrameLayout.LayoutParams previewLayoutParams = new FrameLayout.LayoutParams(
+                LinearLayout.LayoutParams previewLayoutParams = new LinearLayout.LayoutParams(
                         !needRotate ? longSide / 4 : shortSide / 4,
                         needRotate ? longSide / 4 : shortSide / 4
                 );
-                FrameLayout.LayoutParams originLayoutParams = new FrameLayout.LayoutParams(
+                LinearLayout.LayoutParams originLayoutParams = new LinearLayout.LayoutParams(
                         longSide / 4, shortSide / 4
                 );
                 previewLayoutParams.gravity = Gravity.END | Gravity.TOP;
@@ -191,12 +220,15 @@ public class MainActivity extends AppCompatActivity implements ViewTreeObserver.
                 ivOriginFrame.setLayoutParams(originLayoutParams);
                 tvOrigin.setLayoutParams(originLayoutParams);
 
-                ((FrameLayout) textureView.getParent()).addView(ivPreviewFrame);
-                ((FrameLayout) textureView.getParent()).addView(ivOriginFrame);
-                ((FrameLayout) textureView.getParent()).addView(tvPreview);
-                ((FrameLayout) textureView.getParent()).addView(tvOrigin);
+                ((LinearLayout) textureView.getParent()).addView(ivPreviewFrame); // FrameLayout
+                ((LinearLayout) textureView.getParent()).addView(ivOriginFrame);
+                ((LinearLayout) textureView.getParent()).addView(tvPreview);
+                ((LinearLayout) textureView.getParent()).addView(tvOrigin);
             }
         });
+
+
+         */
     }
 
 
@@ -248,8 +280,8 @@ public class MainActivity extends AppCompatActivity implements ViewTreeObserver.
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            ivOriginFrame.setImageBitmap(originalBitmap);
-                            ivPreviewFrame.setImageBitmap(previewBitmap);
+                            //ivOriginFrame.setImageBitmap(originalBitmap);
+                            //ivPreviewFrame.setImageBitmap(previewBitmap);
                         }
                     });
                 }
@@ -275,6 +307,7 @@ public class MainActivity extends AppCompatActivity implements ViewTreeObserver.
         }
         if (camera2Helper != null) {
             camera2Helper.release();
+            camera2Helper2.release();
         }
         super.onDestroy();
     }
@@ -284,4 +317,6 @@ public class MainActivity extends AppCompatActivity implements ViewTreeObserver.
             camera2Helper.switchCamera();
         }
     }
+
+
 }
